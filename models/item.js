@@ -11,7 +11,7 @@ const itemSchema = new Schema({
 });
 
 itemSchema.virtual("url").get(function () {
-  return `/shop/item/${this._id}`;
+  return `/inventory/item/${this._id}`;
 });
 
 module.exports = mongoose.model("Item", itemSchema);

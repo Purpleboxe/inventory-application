@@ -1,5 +1,18 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+  section
+    h1= title
+    p Welcome to #[em Inventory Application], a website where you can manage, track, and store things in your inventory.
+
+    br
+    hr
+    br
+
+    h2 Current Inventory 
+
+    p The inventory currently has: 
+
+    ul 
+      li #[strong Items:] !{item_count}
+      li #[strong Categories:] !{category_count}
