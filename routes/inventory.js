@@ -10,6 +10,8 @@ router.get("/", item_controller.index);
 
 router.get("/category", category_controller.category_list);
 
+router.get("/category/:id", category_controller.category_detail);
+
 // Item Routes
 
 router.get("/item", item_controller.item_list);

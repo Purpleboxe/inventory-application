@@ -24,8 +24,8 @@ async function main() {
   console.log("Debug: About to connect");
   await mongoose.connect(mongoDB);
   console.log("Debug: Should be connected?");
-  await createItems();
   await createCategories();
+  await createItems();
   console.log("Debug: Closing mongoose");
   mongoose.connection.close();
 }
@@ -41,10 +41,10 @@ async function itemCreate(
   const itemDetail = {
     name: name,
     description: description,
+    category: category,
     price: price,
     numberInStock: numberInStock,
   };
-  if (category != false) itemDetail.category = category;
 
   const item = new Item(itemDetail);
   await item.save();
@@ -66,28 +66,28 @@ async function createItems() {
     {
       name: "Apple",
       description: "Fresh red apples",
-      category: 0,
+      category: categories[0],
       price: 1.5,
       numberInStock: 100,
     },
     {
       name: "Carrot",
       description: "Organic carrots",
-      category: 1,
+      category: categories[1],
       price: 0.8,
       numberInStock: 200,
     },
     {
       name: "Milk",
       description: "1 litre of fresh milk",
-      category: 2,
+      category: categories[2],
       price: 1.2,
       numberInStock: 50,
     },
     {
       name: "Bread",
       description: "Whole grain bread",
-      category: 3,
+      category: categories[3],
       price: 2.0,
       numberInStock: 30,
     },
@@ -99,7 +99,7 @@ async function createItems() {
         index,
         item.name,
         item.description,
-        categories[item.category],
+        item.category._id,
         item.price,
         item.numberInStock
       );
