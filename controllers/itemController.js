@@ -15,3 +15,12 @@ exports.index = asyncHandler(async (req, res, next) => {
     category_count: numCategories,
   });
 });
+
+exports.item_list = asyncHandler(async (req, res, next) => {
+  const allItems = await Item.find({}, "name description")
+    .sort({ title: 1 })
+    .populate("category")
+    .exec();
+
+  res.render("item_list", { title: "Item List", item_list: allItems });
+});
