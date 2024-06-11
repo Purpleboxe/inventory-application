@@ -1,13 +1,16 @@
 doctype html
 html
   head
-    title= title
+    title #{title}
+    meta(charset='utf-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
     link(rel='stylesheet', href='/stylesheets/style.css')
   body
-  header
-    h2 Inventory Application
-    .links
-      a(href="/inventory") Home
-      a(href="/inventory/item") Items
-      a(href="/inventory/category") Categories 
-  block content
+    header
+      h2 Inventory Application
+      nav.links
+        a(href="/inventory") Home
+        a(href="/inventory/item") Items
+        a(href="/inventory/category") Categories
+    main
+      block content
