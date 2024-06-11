@@ -10,4 +10,8 @@ router.get("/", item_controller.index);
 
 router.get("/category", category_controller.category_list);
 
+// Item Routes
+
+router.get("/item", item_controller.item_list);
+
 module.exports = router;
