@@ -2,6 +2,7 @@ const Item = require("../models/item");
 const Category = require("../models/category");
 
 const asyncHandler = require("express-async-handler");
+const { body, validationResult } = require("express-validator");
 
 exports.index = asyncHandler(async (req, res, next) => {
   const [numItems, numCategories] = await Promise.all([
@@ -17,12 +18,19 @@ exports.index = asyncHandler(async (req, res, next) => {
 });
 
 exports.item_list = asyncHandler(async (req, res, next) => {
-  const allItems = await Item.find({}, "name description")
-    .sort({ title: 1 })
-    .populate("category")
-    .exec();
+  const [allItems, numItems] = await Promise.all([
+    Item.find({}, "name description")
+      .sort({ title: 1 })
+      .populate("category")
+      .exec(),
+    Item.countDocuments({}).exec(),
+  ]);
 
-  res.render("item_list", { title: "Item List", item_list: allItems });
+  res.render("item_list", {
+    title: "Item List",
+    item_list: allItems,
+    item_count: numItems,
+  });
 });
 
 exports.item_detail = asyncHandler(async (req, res, next) => {
@@ -38,4 +46,8 @@ exports.item_detail = asyncHandler(async (req, res, next) => {
     title: "Item: " + item.name,
     item: item,
   });
+});
+
+exports.item_create_get = asyncHandler(async (req, res, next) => {
+  res.render("item_form", { title: "Create Item" });
 });

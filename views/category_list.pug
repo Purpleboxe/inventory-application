@@ -2,7 +2,9 @@ extends layout
 
 block content
     section 
-        h1= title
+        h1= title + " - " + category_count
+        a(href='/inventory/category/create') Create New Category
+        hr
 
         if category_list.length 
             ul 
