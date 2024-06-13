@@ -2,7 +2,9 @@ extends layout
 
 block content
     section
-        h1= title
+        h1= title + " - " + item_count
+        a(href='/inventory/item/create') Create New Item
+        hr
         if item_list.length
             ul 
                 each item in item_list 
