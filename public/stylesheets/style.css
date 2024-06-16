@@ -36,6 +36,12 @@ a:hover {
   text-decoration: underline;
 }
 
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .links {
   display: flex;
   align-items: center;
@@ -44,4 +50,22 @@ a:hover {
   border-radius: 40px;
   padding: 20px;
   height: 0.8rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group input {
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid var(--black);
+}
+
+.form-group button {
+  width: 10%;
+  padding: 5px;
 }

@@ -1,0 +1,12 @@
+extends layout 
+
+block content 
+    section 
+        h1 #{title}: #{item.name}
+        p= item.description
+
+        p Do you really want to delete this category?
+        form(method="POST")
+                .form-group 
+                    input#author.id(type='hidden' name='itemid' value=item._id)
+                    button(type='submit') Delete
