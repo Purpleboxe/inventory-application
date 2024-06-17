@@ -69,3 +69,8 @@ form {
   width: 10%;
   padding: 5px;
 }
+
+.actions {
+  display: flex;
+  gap: 40px;
+}

@@ -12,4 +12,6 @@ block content
             else
                 | No category available
         hr
-        a(href=item.url+"/delete") Delete item
+        .actions
+            a(href=item.url+"/update") Update item
+            a(href=item.url+"/delete") Delete item
