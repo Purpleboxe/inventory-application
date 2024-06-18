@@ -10,19 +10,24 @@ block content
                 input#name(type="text" name="name" placeholder="Item name" required value=(item && item.name ? item.name : ''))
             .form-group
                 label(for="description") Description
-                input#description(type="text" name="description" placeholder="Item description" required value=(item && item.description ? item.description : ''))
+                input#description(type="textarea" name="description" placeholder="Item description" required value=(item && item.description ? item.description : ''))
             .form-group
                 label(for="price") Price
                 input#price(type="number" name="price" placeholder="Item price" required value=(item && item.price ? item.price : ''))
             .form-group
                 label(for="numberInStock") Number In Stock
                 input#numberInStock(type="number" name="numberInStock" placeholder="Number in stock" required value=(item && item.numberInStock ? item.numberInStock : ''))
+
             .form-group
-                label(for="category") Category
-                each category in categories
-                    .radio
-                        input(type="radio" name="category" value=category._id checked=(category.checked ? 'checked' : ''))
-                        | #{category.name}
+            label Category:
+            .categories
+                for category in categories
+                    if category.checked
+                        input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id, checked)
+                    else
+                        label(for=category._id) &nbsp;#{category.name}
+                            input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id)
+
             .form-group
                 button(type="submit") Submit
 
