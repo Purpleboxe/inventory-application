@@ -126,7 +126,7 @@ exports.item_delete_post = asyncHandler(async (req, res, next) => {
 
 exports.item_update_get = asyncHandler(async (req, res, next) => {
   const [item, allCategories] = await Promise.all([
-    Item.findById(req.params.id).exec(),
+    Item.findById(req.params.id).populate("category").exec(),
     Category.find().sort({ name: 1 }).exec(),
   ]);
 
@@ -136,11 +136,9 @@ exports.item_update_get = asyncHandler(async (req, res, next) => {
     return next(err);
   }
 
-  const itemCategories = Array.isArray(item.category) ? item.category : [];
-
   allCategories.forEach((category) => {
-    if (itemCategories.includes(category._id.toString())) {
-      category.checked = true;
+    if (item.category.includes(category._id)) {
+      category.checked = "true";
     }
   });
 
@@ -172,7 +170,7 @@ exports.item_update_post = [
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
 
-    const item = new Item({
+    const item = {
       name: req.body.name,
       description: req.body.description,
       category:
@@ -180,7 +178,7 @@ exports.item_update_post = [
       price: req.body.price,
       numberInStock: req.body.numberInStock,
       _id: req.params.id,
-    });
+    };
 
     if (!errors.isEmpty()) {
       const allCategories = await Category.find().sort({ name: 1 }).exec();

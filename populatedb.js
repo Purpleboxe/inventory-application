@@ -66,32 +66,33 @@ async function createItems() {
     {
       name: "Apple",
       description: "Fresh red apples",
-      category: categories[0],
+      category: [categories[0]],
       price: 1.5,
       numberInStock: 100,
     },
     {
       name: "Carrot",
       description: "Organic carrots",
-      category: categories[1],
+      category: [categories[1]],
       price: 0.8,
       numberInStock: 200,
     },
     {
       name: "Milk",
       description: "1 litre of fresh milk",
-      category: categories[2],
+      category: [categories[2]],
       price: 1.2,
       numberInStock: 50,
     },
     {
       name: "Bread",
       description: "Whole grain bread",
-      category: categories[3],
+      category: [categories[3]],
       price: 2.0,
       numberInStock: 30,
     },
   ];
+
   console.log("Adding items");
   await Promise.all(
     sampleItems.map(async (item, index) => {
@@ -99,7 +100,7 @@ async function createItems() {
         index,
         item.name,
         item.description,
-        item.category._id,
+        item.category,
         item.price,
         item.numberInStock
       );
