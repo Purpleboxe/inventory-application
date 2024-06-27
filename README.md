@@ -4,8 +4,6 @@
 
 Inventory Application for [The Odin Project](https://www.theodinproject.com/lessons/nodejs-inventory-application)
 
-[Live Site](https://inventory-application-production-cd71.up.railway.app/inventory)
-
 ## Preview
 
 ![](./public/images/Preview.png)
