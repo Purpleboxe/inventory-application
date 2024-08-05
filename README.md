@@ -14,23 +14,44 @@ Inventory Application for [The Odin Project](https://www.theodinproject.com/less
 
 - Pug
 - Node (Express)
-- MongoDB
+- SQL
 
 ### Running locally
 
 To run the application locally:
 
-1. Install the necessary dependencies:
+1. Clone the repository:
 
-```
-npm install
-```
+   ```bash
+   git clone git@github.com:Purpleboxe/inventory-application.git
+   cd inventory-application
+   ```
 
-2. Start the application:
+2. Install dependencies:
 
-```
-npm run start
-```
+   ```bash
+   npm install
+   ```
+
+3. Set up enviroment variables by creating a `.env` file in the root of the directory and add the following:
+
+   ```env
+   DATABASE_URL=your_postgresql_database
+   ```
+
+4. Set up the database by adding tables using the following:
+
+   ```bash
+   node db/setupDB.js
+   ```
+
+5. Start the server:
+
+   ```bash
+   npm run start
+   ```
+
+6. Open your browser and navigate to `http://localhost:3000`
 
 ## Conclusion
 
