@@ -5,16 +5,16 @@ block content
         h1 #{item.name}
         p #{item.description}
         p #[strong Price: ] #{item.price}$
-        p #[strong Number In Stock: ] #{item.numberInStock}
+        p #[strong Number In Stock: ] #{item.number_in_stock}
         p #[strong Category: ]
-            if item.category.length > 0
-                each val, index in item.category
-                    a(href=val.url) #{val.name}
-                    if index < item.category.length - 1
+            if category && category.length > 0
+                each cat, index in category
+                    a(href=`/inventory/category/${cat.id}`) #{cat.name}
+                    if index < category.length - 1
                         |,&nbsp;
             else
                 | None
         hr
         .actions
-            a(href=item.url+"/update") Update item
-            a(href=item.url+"/delete") Delete item
+            a(href=item.id+"/update") Update item
+            a(href=item.id+"/delete") Delete item

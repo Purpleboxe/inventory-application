@@ -1,55 +1,65 @@
-const Item = require("../models/item");
-const Category = require("../models/category");
-
+const pool = require("../db/db");
 const asyncHandler = require("express-async-handler");
 const { body, validationResult } = require("express-validator");
 
 exports.index = asyncHandler(async (req, res, next) => {
-  const [numItems, numCategories] = await Promise.all([
-    Item.countDocuments({}).exec(),
-    Category.countDocuments({}).exec(),
-  ]);
+  const { rows: numItems } = await pool.query("SELECT COUNT(*) FROM items");
+  const { rows: numCategories } = await pool.query(
+    "SELECT COUNT(*) FROM categories"
+  );
 
   res.render("index", {
     title: "Home",
-    item_count: numItems,
-    category_count: numCategories,
+    item_count: numItems[0].count,
+    category_count: numCategories[0].count,
   });
 });
 
 exports.item_list = asyncHandler(async (req, res, next) => {
-  const [allItems, numItems] = await Promise.all([
-    Item.find({}, "name description")
-      .sort({ name: 1 })
-      .populate("category")
-      .exec(),
-    Item.countDocuments({}).exec(),
-  ]);
+  const { rows: allItems } = await pool.query(
+    "SELECT *, 'item/' || id as url FROM items ORDER BY name ASC"
+  );
+  const { rows: numItems } = await pool.query("SELECT COUNT(*) FROM items");
 
   res.render("item_list", {
     title: "Item List",
     item_list: allItems,
-    item_count: numItems,
+    item_count: numItems[0].count,
   });
 });
 
 exports.item_detail = asyncHandler(async (req, res, next) => {
-  const item = await Item.findById(req.params.id).populate("category").exec();
+  const { rows: item } = await pool.query("SELECT * FROM items WHERE id = $1", [
+    req.params.id,
+  ]);
 
-  if (item === null) {
+  const { rows: itemCategories } = await pool.query(
+    "SELECT category_id FROM item_categories WHERE item_id = $1",
+    [req.params.id]
+  );
+
+  if (item.length === 0) {
     const err = new Error("Item not found!");
     err.status = 404;
     return next(err);
   }
 
+  const { rows: categoryDetails } = await pool.query(
+    "SELECT * FROM categories WHERE id = ANY($1::int[])",
+    [itemCategories.map((cat) => cat.category_id)]
+  );
+
   res.render("item_detail", {
-    title: "Item: " + item.name,
-    item: item,
+    title: "Item: " + item[0].name,
+    item: item[0],
+    category: categoryDetails,
   });
 });
 
 exports.item_create_get = asyncHandler(async (req, res, next) => {
-  const allCategories = await Category.find().sort({ name: 1 }).exec();
+  const { rows: allCategories } = await pool.query(
+    "SELECT * FROM categories ORDER BY name ASC"
+  );
 
   res.render("item_form", { title: "Create Item", categories: allCategories });
 });
@@ -70,81 +80,108 @@ exports.item_create_post = [
     .escape(),
   body("category.*").escape(),
   body("price", "Price must not be empty").trim().escape(),
-  body("numberInStock", "Number in stock must not be empty").trim().escape(),
+  body("number_in_stock", "Number in stock must not be empty").trim().escape(),
 
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
 
-    const item = new Item({
+    const item = {
       name: req.body.name,
       description: req.body.description,
-      category: req.body.category,
       price: req.body.price,
-      numberInStock: req.body.numberInStock,
-    });
+      number_in_stock: req.body.number_in_stock,
+    };
 
     if (!errors.isEmpty()) {
-      const allCategories = await Category.find().sort({ name: 1 }).exec();
+      const { rows: allCategories } = await pool.query(
+        "SELECT * FROM categories ORDER BY name ASC"
+      );
 
-      for (const category of allCategories) {
-        if (item.category.indexOf(category._id) > -1) {
+      allCategories.forEach((category) => {
+        if (req.body.category.includes(category.id.toString())) {
           category.checked = "true";
         }
-      }
+      });
 
       res.render("item_form", {
         title: "Create Item",
         categories: allCategories,
-        item: item,
+        item,
         errors: errors.array(),
       });
     } else {
-      await item.save();
-      res.redirect(item.url);
+      const result = await pool.query(
+        "INSERT INTO items (name, description, price, number_in_stock) VALUES ($1, $2, $3, $4) RETURNING *",
+        [item.name, item.description, item.price, item.number_in_stock]
+      );
+      const itemId = result.rows[0].id;
+
+      if (req.body.category.length > 0) {
+        const categoryInsertPromises = req.body.category.map((categoryId) =>
+          pool.query(
+            "INSERT INTO item_categories (item_id, category_id) VALUES ($1, $2)",
+            [itemId, categoryId]
+          )
+        );
+        await Promise.all(categoryInsertPromises);
+      }
+      res.redirect(`/inventory/item/${itemId}`);
     }
   }),
 ];
 
 exports.item_delete_get = asyncHandler(async (req, res, next) => {
-  const item = await Item.findById(req.params.id).exec();
+  const { rows: item } = await pool.query("SELECT * FROM items WHERE id = $1", [
+    req.params.id,
+  ]);
 
-  if (item === null) {
+  if (item.length === 0) {
     res.redirect("/inventory/item");
     return;
   }
 
   res.render("item_delete", {
     title: "Delete Item",
-    item: item,
+    item: item[0],
   });
 });
 
 exports.item_delete_post = asyncHandler(async (req, res, next) => {
-  await Item.findByIdAndDelete(req.body.itemid);
+  await pool.query("DELETE FROM items WHERE id = $1", [req.body.itemid]);
   res.redirect("/inventory/item");
 });
 
 exports.item_update_get = asyncHandler(async (req, res, next) => {
-  const [item, allCategories] = await Promise.all([
-    Item.findById(req.params.id).populate("category").exec(),
-    Category.find().sort({ name: 1 }).exec(),
+  const { rows: item } = await pool.query("SELECT * FROM items WHERE id = $1", [
+    req.params.id,
   ]);
+  const { rows: allCategories } = await pool.query(
+    "SELECT * FROM categories ORDER BY name ASC"
+  );
 
-  if (item === null) {
+  if (item.length === 0) {
     const err = new Error("Item not found!");
     err.status = 404;
     return next(err);
   }
 
+  const { rows: itemCategories } = await pool.query(
+    "SELECT category_id FROM item_categories WHERE item_id = $1",
+    [req.params.id]
+  );
+  const itemCategoryIds = itemCategories.map((cat) =>
+    cat.category_id.toString()
+  );
+
   allCategories.forEach((category) => {
-    if (item.category.includes(category._id)) {
+    if (itemCategoryIds.includes(category.id.toString())) {
       category.checked = "true";
     }
   });
 
   res.render("item_form", {
     title: "Update Item",
-    item: item,
+    item: item[0],
     categories: allCategories,
   });
 });
@@ -165,7 +202,7 @@ exports.item_update_post = [
     .escape(),
   body("category.*").escape(),
   body("price", "Price must not be empty").trim().escape(),
-  body("numberInStock", "Number in stock must not be empty").trim().escape(),
+  body("number_in_stock", "Number in stock must not be empty").trim().escape(),
 
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
@@ -173,33 +210,54 @@ exports.item_update_post = [
     const item = {
       name: req.body.name,
       description: req.body.description,
-      category:
-        typeof req.body.category === "undefined" ? [] : req.body.category,
       price: req.body.price,
-      numberInStock: req.body.numberInStock,
-      _id: req.params.id,
+      number_in_stock: req.body.number_in_stock,
+      category: req.body.category || [],
     };
 
     if (!errors.isEmpty()) {
-      const allCategories = await Category.find().sort({ name: 1 }).exec();
+      const { rows: allCategories } = await pool.query(
+        "SELECT * FROM categories ORDER BY name ASC"
+      );
 
-      for (const category of allCategories) {
-        if (item.category.indexOf(category._id) > -1) {
+      allCategories.forEach((category) => {
+        if (item.category.includes(category.id.toString())) {
           category.checked = "true";
         }
-      }
+      });
 
       res.render("item_form", {
         title: "Update Item",
-        item: item,
+        item,
         categories: allCategories,
         errors: errors.array(),
       });
-      return;
     } else {
-      const updatedItem = await Item.findByIdAndUpdate(req.params.id, item, {});
+      await pool.query(
+        "UPDATE items SET name = $1, description = $2, price = $3, number_in_stock = $4 WHERE id = $5",
+        [
+          item.name,
+          item.description,
+          item.price,
+          item.number_in_stock,
+          req.params.id,
+        ]
+      );
+      await pool.query("DELETE FROM item_categories WHERE item_id = $1", [
+        req.params.id,
+      ]);
 
-      res.redirect(updatedItem.url);
+      if (item.category.length > 0) {
+        const categoryInsertPromises = item.category.map((categoryId) =>
+          pool.query(
+            "INSERT INTO item_categories (item_id, category_id) VALUES ($1, $2)",
+            [req.params.id, categoryId]
+          )
+        );
+        await Promise.all(categoryInsertPromises);
+      }
+
+      res.redirect(`/inventory/item/${req.params.id}`);
     }
   }),
 ];

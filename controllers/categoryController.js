@@ -1,37 +1,43 @@
-const Category = require("../models/category");
-const Item = require("../models/item");
-
+const pool = require("../db/db");
 const asyncHandler = require("express-async-handler");
 const { body, validationResult } = require("express-validator");
 
 exports.category_list = asyncHandler(async (req, res, next) => {
-  const [allCategories, numCategories] = await Promise.all([
-    Category.find().exec(),
-    Category.countDocuments({}).exec(),
-  ]);
+  const { rows: allCategories } = await pool.query(
+    "SELECT *, 'category/' || id as url FROM categories ORDER BY name ASC"
+  );
+  const { rows: numCategories } = await pool.query(
+    "SELECT COUNT(*) FROM categories"
+  );
 
   res.render("category_list", {
     title: "Category List",
     category_list: allCategories,
-    category_count: numCategories,
+    category_count: numCategories[0].count,
   });
 });
 
 exports.category_detail = asyncHandler(async (req, res, next) => {
-  const [category, itemsInCategory] = await Promise.all([
-    Category.findById(req.params.id).exec(),
-    Item.find({ category: req.params.id }, "name description").exec(),
-  ]);
+  const { rows: category } = await pool.query(
+    "SELECT * FROM categories WHERE id = $1",
+    [req.params.id]
+  );
+  const { rows: itemsInCategory } = await pool.query(
+    `SELECT * FROM items 
+     JOIN item_categories ON items.id = item_categories.item_id 
+     WHERE item_categories.category_id = $1`,
+    [req.params.id]
+  );
 
-  if (category === null) {
+  if (category.length === 0) {
     const err = new Error("Category not found!");
     err.status = 404;
     return next(err);
   }
 
   res.render("category_detail", {
-    title: "Category: " + category.name,
-    category: category,
+    title: "Category: " + category[0].name,
+    category: category[0],
     category_items: itemsInCategory,
   });
 });
@@ -53,10 +59,10 @@ exports.category_create_post = [
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
 
-    const category = new Category({
+    const category = {
       name: req.body.name,
       description: req.body.description,
-    });
+    };
 
     if (!errors.isEmpty()) {
       res.render("category_form", {
@@ -66,62 +72,84 @@ exports.category_create_post = [
       });
       return;
     } else {
-      const categoryExists = await Category.findOne({ name: req.body.name })
-        .collation({ locale: "en", strength: 2 })
-        .exec();
-      if (categoryExists) {
+      const { rows: categoryExists } = await pool.query(
+        "SELECT * FROM categories WHERE name = $1",
+        [req.body.name]
+      );
+      if (categoryExists.length > 0) {
         res.render("category_form", {
           title: "Create Category",
           category: category,
           errors: [{ msg: "Category with this name already exists." }],
         });
       } else {
-        await category.save();
-        res.redirect(category.url);
+        const result = await pool.query(
+          "INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *",
+          [category.name, category.description]
+        );
+        const categoryId = result.rows[0].id;
+        res.redirect(`/inventory/category/${categoryId}`);
       }
     }
   }),
 ];
 
 exports.category_delete_get = asyncHandler(async (req, res, next) => {
-  const [category, allItemsInCategories] = await Promise.all([
-    Category.findById(req.params.id).exec(),
-    Item.find({ category: req.params.id }, "name description").exec(),
-  ]);
+  const { rows: category } = await pool.query(
+    "SELECT * FROM categories WHERE id = $1",
+    [req.params.id]
+  );
 
-  if (category === null) {
+  const { rows: itemsInCategory } = await pool.query(
+    `SELECT items.* FROM items 
+     JOIN item_categories ON items.id = item_categories.item_id 
+     WHERE item_categories.category_id = $1`,
+    [req.params.id]
+  );
+
+  if (category.length === 0) {
     res.redirect("/inventory/category");
     return;
   }
 
   res.render("category_delete", {
     title: "Delete Category",
-    category: category,
-    category_items: allItemsInCategories,
+    category: category[0],
+    category_items: itemsInCategory,
   });
 });
 
 exports.category_delete_post = asyncHandler(async (req, res, next) => {
-  const [category, allItemsInCategories] = await Promise.all([
-    Category.findById(req.params.id).exec(),
-    Item.find({ category: req.params.id }, "name description").exec(),
-  ]);
+  const { rows: category } = await pool.query(
+    "SELECT * FROM categories WHERE id = $1",
+    [req.params.id]
+  );
 
-  if (allItemsInCategories.length > 0) {
+  const { rows: itemsInCategory } = await pool.query(
+    `SELECT items.* FROM items 
+     JOIN item_categories ON items.id = item_categories.item_id 
+     WHERE item_categories.category_id = $1`,
+    [req.params.id]
+  );
+
+  if (itemsInCategory.length > 0) {
     res.render("category_delete", {
       title: "Delete Category",
-      category: category,
-      category_items: allItemsInCategories,
+      category: category[0],
+      category_items: itemsInCategory,
     });
     return;
   } else {
-    await Category.findByIdAndDelete(req.body.categoryid);
+    await pool.query("DELETE FROM categories WHERE id = $1", [req.params.id]);
     res.redirect("/inventory/category");
   }
 });
 
 exports.category_update_get = asyncHandler(async (req, res, next) => {
-  const category = await Category.findById(req.params.id).exec();
+  const { rows: category } = await pool.query(
+    "SELECT * FROM categories WHERE id = $1",
+    [req.params.id]
+  );
 
   if (category === null) {
     const err = new Error("Category not found!");
@@ -131,7 +159,7 @@ exports.category_update_get = asyncHandler(async (req, res, next) => {
 
   res.render("category_form", {
     title: "Update Category",
-    category: category,
+    category: category[0],
   });
 });
 
@@ -148,11 +176,11 @@ exports.category_update_post = [
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
 
-    const category = new Category({
+    const category = {
       name: req.body.name,
       description: req.body.description,
-      _id: req.params.id,
-    });
+      id: req.params.id,
+    };
 
     if (!errors.isEmpty()) {
       res.render("category_form", {
@@ -161,22 +189,23 @@ exports.category_update_post = [
         errors: errors.array(),
       });
     } else {
-      const categoryExists = await Category.findOne({
-        name: req.body.name,
-        _id: { $ne: req.params.id },
-      })
-        .collation({ locale: "en", strength: 2 })
-        .exec();
+      const { rows: categoryExists } = await pool.query(
+        "SELECT * FROM categories WHERE name = $1 AND id != $2",
+        [req.body.name, req.params.id]
+      );
 
-      if (categoryExists) {
+      if (categoryExists.length > 0) {
         res.render("category_form", {
           title: "Update Category",
           category: category,
           errors: [{ msg: "Category with this name already exists." }],
         });
       } else {
-        await Category.findByIdAndUpdate(req.params.id, category, {});
-        res.redirect(category.url);
+        await pool.query(
+          "UPDATE categories SET name = $1, description = $2 WHERE id = $3",
+          [category.name, category.description, req.params.id]
+        );
+        res.redirect(`/inventory/category/${req.params.id}`);
       }
     }
   }),

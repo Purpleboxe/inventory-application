@@ -8,5 +8,5 @@ block content
         p Do you really want to delete this item?
         form(method="POST")
                 .form-group 
-                    input#author.id(type='hidden' name='itemid' value=item._id)
+                    input#author.id(type='hidden' name='itemid' value=item.id)
                     button(type='submit') Delete

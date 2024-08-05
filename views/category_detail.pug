@@ -12,7 +12,7 @@ block content
                 each item in category_items
                     li
                         .name
-                            a(href=item.url) #{item.name}
+                            a(href=`/inventory/item/${item.id}`) #{item.name}
                         .description
                             | #{item.description}
                         br
@@ -20,5 +20,5 @@ block content
             p This category has no items.
         hr
         .actions 
-            a(href=category.url+"/update") Update category
-            a(href=category.url+"/delete") Delete category
+            a(href=category.id+"/update") Update category
+            a(href=category.id+"/delete") Delete category

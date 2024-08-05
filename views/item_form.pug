@@ -15,18 +15,22 @@ block content
                 label(for="price") Price
                 input#price(type="number" name="price" placeholder="Item price" required value=(item && item.price ? item.price : ''))
             .form-group
-                label(for="numberInStock") Number In Stock
-                input#numberInStock(type="number" name="numberInStock" placeholder="Number in stock" required value=(item && item.numberInStock ? item.numberInStock : ''))
+                label(for="number_in_stock") Number In Stock
+                input#number_in_stock(type="number" name="number_in_stock" placeholder="Number in stock" required value=(item && item.number_in_stock ? item.number_in_stock : ''))
 
             .form-group
             label Category:
             .categories
-                for category in categories
-                    if category.checked
-                        input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id, checked)
-                    else
-                        label(for=category._id) &nbsp;#{category.name}
-                            input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id)
+                if categories && categories.length > 0
+                    for category in categories
+                        if category.checked
+                            label(for=category.id) #{category.name}
+                                input.checkbox-input(type='checkbox', name='category', id=category.id, value=category.id, checked)
+                        else
+                            label(for=category.id) #{category.name}
+                                input.checkbox-input(type='checkbox', name='category', id=category.id, value=category.id)
+                else 
+                    p There are no categories
 
             .form-group
                 button(type="submit") Submit

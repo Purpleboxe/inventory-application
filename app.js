@@ -15,21 +15,6 @@ const compression = require("compression");
 const helmet = require("helmet");
 
 const app = express();
-const mongoose = require("mongoose");
-mongoose.set("strictQuery", false);
-
-const mongoDB = process.env.MONGODB_URI;
-
-async function main() {
-  try {
-    await mongoose.connect(mongoDB);
-    console.log("Connected to MongoDB");
-  } catch (err) {
-    console.error("MongoDB connection error:", err);
-  }
-}
-
-main();
 
 const RateLimit = require("express-rate-limit");
 const limiter = RateLimit({
